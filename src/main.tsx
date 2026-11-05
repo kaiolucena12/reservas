@@ -29,7 +29,10 @@ const db=env.VITE_SUPABASE_URL&&env.VITE_SUPABASE_PUBLISHABLE_KEY?createClient(e
 const tabs=['Reservas','Entregas','Financeiro'] as const;
 type Tab=typeof tabs[number];
 const now=()=>iso(new Date());
-const fileName=(r:Reserva)=>'seu-lima-reserva-'+r.numero+'.pdf';
+const fileName = (r: Reserva) => {
+  const nome = r.nome.trim().replace(/[<>:"/\\|?*\x00-\x1F]/g, '-');
+  return `seulima reserva ${nome}.pdf`;
+};
 
 function Marca() {
   return (

@@ -17,6 +17,11 @@ const CINZA = '#53675D';
 const FUNDO = '#F0F4F1';
 const BORDA = '#D9E2DC';
 
+const CONDICAO_DANOS =
+  'O contrato de locação prevê a cobrança de R$ 79,90 por mesa danificada, ' +
+  'R$ 39,90 por cadeira danificada e R$ 19,90 por toalha danificada ou ' +
+  'com mancha permanente. O material danificado ficará com o locatário.';
+
 type Campo = [rotulo: string, valor: string];
 
 export function comprovante(r: Reserva) {
@@ -47,19 +52,18 @@ export function comprovante(r: Reserva) {
   fonte(9, false, '#FFFFFF');
   pdf.text('Contato: (81) 99977-6309', 194, 19, { align: 'right' });
   pdf.text('CNPJ: 65.303.544/0001-78', 194, 25, { align: 'right' });
- const siteUrl = 'https://seulima.vercel.app/';
-const siteTexto = 'Site: seulima.vercel.app';
 
-fonte(9, false, DOURADO);
-pdf.text(siteTexto, 194, 31, { align: 'right' });
+  const siteUrl = 'https://seulima.vercel.app/';
+  const siteTexto = 'Site: seulima.vercel.app';
 
-const larguraLink = pdf.getTextWidth(siteTexto);
-pdf.link(194 - larguraLink, 27.5, larguraLink, 5, {
-  url: siteUrl,
-});
+  fonte(9, false, DOURADO);
+  pdf.text(siteTexto, 194, 31, { align: 'right' });
+
+  const larguraLink = pdf.getTextWidth(siteTexto);
+  pdf.link(194 - larguraLink, 27.5, larguraLink, 5, { url: siteUrl });
 
   fonte(8.5, true, DOURADO);
-  pdf.text(`RESERVA Nº ${r.numero}`, 194, 37, { align: 'right' });
+  pdf.text(`Reserva: ${r.nome}`, 194, 37, { align: 'right' });
 
   // Mede o corpo antes de desenhar para manter tudo em uma página.
   function corpo(desenhar: boolean, escala = 1) {
@@ -80,6 +84,7 @@ pdf.link(194 - larguraLink, 27.5, larguraLink, 5, {
       } = {},
     ) {
       if (!desenhar) return;
+
       fonte(tamanho * escala, opcoes.negrito, opcoes.cor);
       pdf.text(valor, px(x), py(posicao), {
         align: opcoes.alinhar ?? 'left',
@@ -88,21 +93,33 @@ pdf.link(194 - larguraLink, 27.5, larguraLink, 5, {
 
     function faixa(posicao: number, altura: number, cor: string) {
       if (!desenhar) return;
+
       pdf.setFillColor(cor);
       pdf.roundedRect(
-        px(0), py(posicao), largura * escala, altura * escala,
-        2 * escala, 2 * escala, 'F',
+        px(0),
+        py(posicao),
+        largura * escala,
+        altura * escala,
+        2 * escala,
+        2 * escala,
+        'F',
       );
     }
 
     function divisoria(posicao: number) {
       if (!desenhar) return;
+
       pdf.setDrawColor(BORDA);
       pdf.line(px(0), py(posicao), px(largura), py(posicao));
     }
 
-    function quebrar(valor: string, larguraMaxima: number, tamanho: number) {
-      fonte(tamanho);
+    function quebrar(
+      valor: string,
+      larguraMaxima: number,
+      tamanho: number,
+      negrito = false,
+    ) {
+      fonte(tamanho, negrito);
       return pdf.splitTextToSize(valor, larguraMaxima) as string[];
     }
 
@@ -159,19 +176,24 @@ pdf.link(194 - larguraLink, 27.5, larguraLink, 5, {
 
     secao('01', 'Dados do cliente e do evento');
     linhaDeCampos(['Cliente', r.nome], ['Telefone', r.telefone]);
+
     linhaDeCampos(
       ['Data e horário do evento', `${dia(r.data)} às ${r.horario.slice(0, 5)}`],
       ['Instagram', r.instagram],
     );
+
     linhaDeCampos(['Endereço de entrega', endereco(r)]);
+
     linhaDeCampos(
       ['Condomínio ou prédio', r.condominio],
       ['Apartamento', r.apartamento],
     );
+
     linhaDeCampos(
       ['Complemento', r.complemento],
       ['Ponto de referência', r.referencia],
     );
+
     linhaDeCampos([
       'Contato adicional',
       [r.telefone_extra, r.contato, r.parentesco].filter(Boolean).join(' • '),
@@ -181,17 +203,28 @@ pdf.link(194 - larguraLink, 27.5, larguraLink, 5, {
     secao('02', 'Observações sobre entrega e retirada');
 
     for (const regra of observacoes) {
-  fonte(9, true);
-  const linhas = pdf.splitTextToSize(regra, largura - 12) as string[];
+      const linhas = quebrar(regra, largura - 12, 9, true);
+      escrever('•', 3, y + 3, 9, { negrito: true });
 
-  escrever('•', 3, y + 3, 9, { negrito: true });
+      linhas.forEach((linha, i) => {
+        escrever(linha, 8, y + 3 + i * 3.7, 9, { negrito: true });
+      });
 
-  linhas.forEach((linha, i) => {
-    escrever(linha, 8, y + 3 + i * 3.7, 9, { negrito: true });
-  });
+      y += linhas.length * 3.7 + 2;
+    }
 
-  y += linhas.length * 3.7 + 2;
-}
+    y += 2;
+    escrever('Danos ao material locado', 3, y + 3, 9, {
+      negrito: true,
+      cor: VERDE,
+    });
+    y += 6;
+
+    const linhasDanos = quebrar(CONDICAO_DANOS, largura - 6, 9, true);
+    linhasDanos.forEach((linha, i) => {
+      escrever(linha, 3, y + 3 + i * 3.7, 9, { negrito: true });
+    });
+    y += linhasDanos.length * 3.7 + 2;
 
     y += 3;
     secao('03', 'Valores da reserva');
@@ -200,7 +233,6 @@ pdf.link(194 - larguraLink, 27.5, larguraLink, 5, {
     const xQtd = 83;
     const xUnitario = 127;
     const xValor = 174;
-
     const rotuloTabela = { negrito: true, cor: CINZA } as const;
     const direita = { alinhar: 'right' } as const;
 
