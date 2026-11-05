@@ -237,15 +237,38 @@ const idsDasEntregas = entregasOrdenadas.map(p => p.reserva.id);
   } catch {setError('Não foi possível salvar a configuração.');}
   finally {setChanging(false);}
  }
- async function share(r:Reserva){
+ async function share(r: Reserva) {
   setError('');
+
+  const mensagem = `Oi 😊 Sua reserva com a Seu Lima Locações foi registrada. Agora falta pouco para a sua festa! 🎉
+
+Segue o PDF da sua reserva. Dá uma conferida nos dados e, por favor, leia com atenção as observações do contrato de locação, especialmente as orientações sobre entrega, retirada e cuidado com os materiais.
+
+Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar por aqui. Obrigado por escolher a Seu Lima Locações para fazer parte da sua festa! 💛`;
+
   try {
-   const pdf=comprovante(r);
-   const file=new File([pdf.output('blob')],fileName(r),{type:'application/pdf'});
-   if(navigator.canShare?.({files:[file]})) await navigator.share({files:[file],title:'Reserva nº '+r.numero});
-   else pdf.save(file.name);
-  } catch(e){if(!(e instanceof DOMException&&e.name==='AbortError'))setError('Não foi possível compartilhar. Use Baixar PDF.');}
- }
+    const pdf = comprovante(r);
+    const arquivo = new File([pdf.output('blob')], fileName(r), {
+      type: 'application/pdf',
+    });
+
+    const compartilhamento = {
+      files: [arquivo],
+      text: mensagem,
+    };
+
+    if (navigator.canShare?.(compartilhamento)) {
+      await navigator.share(compartilhamento);
+    } else {
+      pdf.save(arquivo.name);
+      setError('PDF baixado. Anexe o arquivo e cole a mensagem no WhatsApp.');
+    }
+  } catch (erro) {
+    if (erro instanceof DOMException && erro.name === 'AbortError') return;
+
+    setError('Não foi possível compartilhar. Use Baixar PDF e envie pelo WhatsApp.');
+  }
+}
  const start=period==='semana'?deslocar(financeDate,-semana(financeDate)):financeDate;
  const financial=rows.filter(r=>r.status==='ativa'&&(period==='mês'?r.data.slice(0,7)===financeDate.slice(0,7):period==='semana'?r.data>=start&&r.data<=deslocar(start,6):r.data===start)).sort((a,b)=>a.data.localeCompare(b.data));
  function selectTab(value:Tab){setTab(value);setMenu(false);setForm(undefined);setDetail(undefined);setPrices(false);setError('');}
