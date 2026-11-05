@@ -1,0 +1,79 @@
+@import "tailwindcss";
+:root{font-family:Inter,system-ui,sans-serif;color:#172f26;background:#f5f5ee;font-synthesis:none}
+button,a,input,select{-webkit-tap-highlight-color:transparent}
+button{cursor:pointer}
+button:disabled{opacity:.55;cursor:wait}
+:focus-visible{outline:3px solid #c5812c;outline-offset:2px}
+h1{font-size:clamp(2rem,5vw,3.25rem);line-height:1.1;font-weight:800;letter-spacing:-.045em;margin:.3em 0 .2em}
+h2{font-size:1.12rem;font-weight:750}
+.eyebrow{font-size:.72rem;font-weight:800;letter-spacing:.17em;color:#516b5d}
+.muted{color:#53675d}
+.card{@apply rounded-2xl border bg-white p-4 sm:p-5; border-color:#e0e6dc;min-width:0;overflow-wrap:anywhere}
+.layout{min-height:100dvh;display:grid;grid-template-columns:230px minmax(0,1fr)}
+aside{background:#152d26;color:white;padding:24px;position:sticky;top:0;height:100dvh}
+.brand{display:flex;align-items:center;gap:10px;font-size:1.25rem;font-weight:800;line-height:1.1}
+.brand small{display:block;font-size:.63rem;letter-spacing:.18em;margin-top:4px}
+.monogram{display:grid;place-items:center;background:#dfc98b;color:#152d26;width:43px;height:43px;border-radius:12px}
+.nav{display:grid;gap:7px;margin-top:30px}
+.nav button{text-align:left;padding:12px;min-height:45px;border-radius:10px}
+.nav button span{margin-right:10px;color:#e4cf91;font-size:.76rem}
+.nav button:hover,.nav button[aria-current]{background:#315044}
+.mobile-menu{display:none!important}
+.content{width:100%;max-width:1250px;padding:clamp(14px,3.5vw,45px);margin:0 auto}
+.page-head{margin-bottom:21px}
+.columns{display:grid;grid-template-columns:minmax(0,390px) minmax(0,1fr);gap:16px;align-items:start}
+.primary,.secondary,.danger{@apply inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold;min-height:44px}
+.primary{background:#246048;color:white}
+.primary:hover{background:#194b37}
+.secondary{border:1px solid #d5dfd5;background:#f9faf7;color:#183c2d}
+.secondary:hover{background:#edf3eb}
+.danger{color:#9b2d24;background:#fff2ee}
+.actions{@apply flex flex-wrap gap-2 mb-4}
+.day{min-height:44px;border-radius:9px;background:#f5f7f2;position:relative;font-size:.9rem;font-weight:650;padding-bottom:3px}
+.day.outside{color:#68766e;background:#fafbf9}
+.day.selected{background:#246048;color:white}
+.dot{position:absolute;bottom:4px;left:calc(50% - 3px);width:6px;height:6px;border-radius:100%;background:#a76518}
+.selected .dot{background:#ffe4a3}
+.entry{border-top:1px solid #e5ebe3;margin-top:13px;padding-top:13px}
+.split{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.chip,.number{display:inline-block;border-radius:8px;background:#edf3ea;padding:3px 8px;font-size:.76rem;font-weight:650}
+.number{background:#246048;color:white}
+.empty{background:#f5f7f2;padding:16px;border-radius:10px;margin-top:12px;color:#53675d}
+.fields{@apply grid gap-3 mt-3 sm:grid-cols-2}
+label{display:grid;gap:4px;font-size:.88rem;font-weight:650;min-width:0}
+input,select{box-sizing:border-box;width:100%;min-width:0;min-height:45px;border:1px solid #cbd8cd;background:#fff;border-radius:10px;padding:8px 10px;font-size:1rem;color:#172f26}
+.summary{margin-top:12px;background:#eff5ec;border-radius:12px;padding:12px}
+.summary div{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+.error{background:#fff0ed;color:#86291f;border-radius:10px;padding:10px}
+.link{text-decoration:underline;text-underline-offset:3px;font-weight:650}
+.login{min-height:100dvh;display:grid;place-items:center;padding:16px;background:#e7eee4}
+.login .card{width:min(100%,430px);padding:28px}
+.kpi{background:#193c30;color:#fff;border-radius:14px;padding:18px;margin:16px 0}
+.kpi strong{font-size:clamp(1.65rem,5vw,2.5rem)}
+@media(max-width:1000px){.columns{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){
+ .layout{display:block}
+ aside{height:auto;position:relative;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:12px 14px}
+ .mobile-menu{display:inline-flex!important}
+ .nav{display:none;width:100%;margin-top:10px}
+ .nav.open{display:grid}
+}
+.brand-logo {
+  display: block;
+  width: 160px;
+  max-width: 100%;
+  height: auto;
+}
+
+.login .brand-logo {
+  width: 210px;
+  margin-inline: auto;
+  background: #152d26;
+  border-radius: 16px;
+}
+
+@media (max-width: 700px) {
+  aside .brand-logo {
+    width: 112px;
+  }
+}
