@@ -1,3 +1,4 @@
+import { RotaDoDia } from './RotaDoDia';
 import {
 
   closestCenter,
@@ -236,6 +237,11 @@ function EntregaMovel({ id, children }: { id: string; children: ReactNode }) {
 
 }
 
+type ReservaComRetirada = Reserva & {
+  data_retirada?: string | null;
+  retirada_concluida?: boolean;
+};
+
 function Painel(){
 
  const client=db!;
@@ -250,7 +256,7 @@ function Painel(){
 
  const [period,setPeriod]=useState('mês');
 
- const [rows,setRows]=useState<Reserva[]>([]);
+ const [rows,setRows]=useState<ReservaComRetirada[]>([]);
 
  const [config,setConfig]=useState<Config|null>(null);
 
@@ -292,7 +298,7 @@ const sensoresEntrega = useSensors(
 
   if(conf.error) throw conf.error;
 
-  const list:Reserva[]=[];
+  const list:ReservaComRetirada[]=[];
 
   for(let offset=0;;offset+=500){
 
@@ -380,6 +386,8 @@ const idsDasEntregas = entregasOrdenadas.map(p => p.reserva.id);
 
  const current=rows.find(r=>r.id===detail);
 
+
+
  async function save(draft:Draft,id?:string){
 
   const table=client.from('reservas');
@@ -396,7 +404,7 @@ const idsDasEntregas = entregasOrdenadas.map(p => p.reserva.id);
 
  }
 
- async function update(r:Reserva,patch:Partial<Reserva>){
+ async function update(r:Reserva,patch:Partial<ReservaComRetirada>){
 
   if(changing)return;
 
@@ -618,6 +626,28 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
 
      {current.referencia&&<p>Referência: {current.referencia}</p>}
 
+     {current.status === 'ativa' && (
+      <form className="mt-3 space-y-2" key={current.id + ':' + (current?.data_retirada ?? '')} onSubmit={e => {
+       e.preventDefault();
+       const dataRetirada = String(new FormData(e.currentTarget).get('data_retirada') ?? '') || null;
+       const patch = dataRetirada === (current?.data_retirada ?? null)
+        ? { data_retirada: dataRetirada }
+        : { data_retirada: dataRetirada, retirada_concluida: false };
+       void update(current, patch);
+      }}>
+       <label>Data da retirada
+        <input name="data_retirada" type="date" min={current.data} defaultValue={current?.data_retirada ?? ''} />
+       </label>
+       <button type="submit" className="secondary" disabled={changing}>Salvar data da retirada</button>
+       {current?.data_retirada && (
+        <button type="button" className="secondary ml-2" disabled={changing} onClick={() =>
+         void update(current, { retirada_concluida: !current.retirada_concluida })
+        }>
+         {current.retirada_concluida ? 'Reabrir retirada' : 'Concluir retirada'}
+        </button>
+       )}
+      </form>
+     )}
      <Quantidades r={current}/>
 
      <dl className="summary"><div><dt>Subtotal da locação</dt><dd>{moeda(current.subtotal)}</dd></div><div><dt>Frete</dt><dd>{moeda(current.frete)}</dd></div><div className="font-bold"><dt>Total da reserva</dt><dd>{moeda(current.total)}</dd></div></dl>
@@ -710,7 +740,14 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
 
     </form></div>
 
-    <div className="space-y-4"><Mapa reservas={deliveries} saida={config.saida} onParadas={setParadas}/>
+    <div className="space-y-4">
+     <RotaDoDia
+      key={JSON.stringify([date, config.saida, rows.filter(r => r.data === date || r.data_retirada === date)])}
+      data={date}
+      deposito={config.saida}
+      client={client}
+     />
+     {import.meta.env.VITE_GOOGLE_MAPS_KEY && <Mapa reservas={deliveries} saida={config.saida} onParadas={setParadas}/>}
 
      <section className="card"><h2>Entregas de {dia(date)}</h2>
 
