@@ -242,6 +242,33 @@ export function FormReserva({
   );
   const valorFrete = cents(frete) || 0;
 
+  const ocupacao = historico.reduce(
+  (total, reserva) => {
+    if (
+      reserva.data !== draft.data ||
+      reserva.status !== 'ativa' ||
+      reserva.id === current?.id
+    ) {
+      return total;
+    }
+
+    return {
+      mesas: total.mesas + reserva.conjuntos + reserva.mesas,
+      cadeiras: total.cadeiras + reserva.conjuntos * 4 + reserva.cadeiras,
+    };
+  },
+  { mesas: 0, cadeiras: 0 },
+);
+
+const mesasLivres = Math.max(0, (config.estoque_mesas ?? 35) - ocupacao.mesas);
+const cadeirasLivres = Math.max(0, (config.estoque_cadeiras ?? 140) - ocupacao.cadeiras);
+const conjuntosLivres = Math.min(mesasLivres, Math.floor(cadeirasLivres / 4));
+
+const estoqueInsuficiente =
+  draft.conjuntos + draft.mesas > mesasLivres ||
+  draft.conjuntos * 4 + draft.cadeiras > cadeirasLivres;
+
+const estoqueEsgotado = mesasLivres === 0 && cadeirasLivres === 0;
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
@@ -355,6 +382,22 @@ export function FormReserva({
 
       <section className="card">
         <h2>Itens e valores</h2>
+        <div className="summary" aria-live="polite">
+  <p><strong>Disponibilidade para {dia(draft.data, { dateStyle: 'short' })}</strong></p>
+  <p>
+    Mesas: {mesasLivres || 'esgotadas'} · Cadeiras: {cadeirasLivres || 'esgotadas'}
+  </p>
+  <p>Conjuntos completos: {conjuntosLivres || 'esgotados'}</p>
+  <p className="muted text-sm">Os conjuntos usam as mesas e cadeiras acima.</p>
+
+  {estoqueEsgotado ? (
+    <p className="error mt-2">Estoque esgotado para esta data.</p>
+  ) : estoqueInsuficiente && (
+    <p className="error mt-2">
+      A quantidade escolhida supera o estoque disponível para esta data.
+    </p>
+  )}
+</div>
 
         <div className="fields">
           {items.map(item => (
@@ -400,10 +443,10 @@ export function FormReserva({
       {error && <p role="alert" className="error">{error}</p>}
 
       <div className="flex flex-wrap gap-2">
-        <button type="submit" className="primary" disabled={busy}>
+        <button type="submit" className="primary" disabled={busy || estoqueInsuficiente || estoqueEsgotado}>
           {busy ? 'Salvando…' : 'Salvar reserva'}
         </button>
-        <button type="button" className="secondary" disabled={busy} onClick={close}>
+        <button type="button" className="secondary" disabled={busy || estoqueInsuficiente || estoqueEsgotado} onClick={close}>
           Voltar
         </button>
       </div>

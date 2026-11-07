@@ -1,4 +1,5 @@
 import { RotaDoDia } from './RotaDoDia';
+
 import {
 
   closestCenter,
@@ -49,8 +50,6 @@ import { dia, deslocar, endereco, entregaLabel, iso, items, moeda, semana, type 
 
 import './style.css';
 
-
-
 const env=import.meta.env;
 
 const db=env.VITE_SUPABASE_URL&&env.VITE_SUPABASE_PUBLISHABLE_KEY?createClient(env.VITE_SUPABASE_URL,env.VITE_SUPABASE_PUBLISHABLE_KEY):null;
@@ -68,8 +67,6 @@ const fileName = (r: Reserva) => {
   return `seulima reserva ${nome}.pdf`;
 
 };
-
-
 
 function Marca() {
 
@@ -181,8 +178,6 @@ function EntregaMovel({ id, children }: { id: string; children: ReactNode }) {
 
   } = useSortable({ id });
 
-
-
   return (
 
     <article
@@ -227,8 +222,6 @@ function EntregaMovel({ id, children }: { id: string; children: ReactNode }) {
 
       </button>
 
-
-
       {children}
 
     </article>
@@ -238,8 +231,11 @@ function EntregaMovel({ id, children }: { id: string; children: ReactNode }) {
 }
 
 type ReservaComRetirada = Reserva & {
+
   data_retirada?: string | null;
+
   retirada_concluida?: boolean;
+
 };
 
 function Painel(){
@@ -276,8 +272,6 @@ function Painel(){
 
  const [ordemManual, setOrdemManual] = useState<Record<string, string[]>>({});
 
-
-
 const sensoresEntrega = useSensors(
 
   useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -294,7 +288,7 @@ const sensoresEntrega = useSensors(
 
  const reload=useCallback(async()=>{
 
-  const conf=await client.from('configuracao').select('conjunto,mesa,cadeira,saida,estoque_mesas,estoque_cadeiras').eq('id',1).single();
+  const conf=await client.from('configuracao').select('conjunto,mesa,cadeira,toalha,saida,estoque_mesas,estoque_cadeiras').eq('id',1).single();
 
   if(conf.error) throw conf.error;
 
@@ -340,13 +334,9 @@ const daily = useMemo(
 
     : deliveries.map(reserva => ({ reserva }));
 
-
-
 const ordemDoDia = ordemManual[date] ?? [];
 
 const paradasPorId = new Map(paradasDoDia.map(p => [p.reserva.id, p]));
-
-
 
 const entregasOrdenadas = [
 
@@ -361,8 +351,6 @@ const entregasOrdenadas = [
   ...paradasDoDia.filter(p => !ordemDoDia.includes(p.reserva.id)),
 
 ];
-
-
 
 const idsDasEntregas = entregasOrdenadas.map(p => p.reserva.id);
 
@@ -385,8 +373,6 @@ const idsDasEntregas = entregasOrdenadas.map(p => p.reserva.id);
  const conjuntosDisponiveis = Math.min(mesasDisponiveis, Math.floor(cadeirasDisponiveis / 4));
 
  const current=rows.find(r=>r.id===detail);
-
-
 
  async function save(draft:Draft,id?:string){
 
@@ -494,12 +480,6 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
 
   setError('');
 
-
-
- 
-
-
-
   try {
 
     const pdf = comprovante(r);
@@ -510,8 +490,6 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
 
     });
 
-
-
     const compartilhamento = {
 
       files: [arquivo],
@@ -519,8 +497,6 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
       text: mensagem,
 
     };
-
-
 
     if (navigator.canShare?.(compartilhamento)) {
 
@@ -537,8 +513,6 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
   } catch (erro) {
 
     if (erro instanceof DOMException && erro.name === 'AbortError') return;
-
-
 
     setError('Não foi possível compartilhar. Use Baixar PDF e envie pelo WhatsApp.');
 
@@ -584,10 +558,6 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
 
   <>
 
-
-
-
-
     <FormReserva
 
       key={form}
@@ -627,41 +597,73 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
      {current.referencia&&<p>Referência: {current.referencia}</p>}
 
      {current.status === 'ativa' && (
+
       <form className="mt-3 space-y-2" key={current.id + ':' + (current?.data_retirada ?? '')} onSubmit={e => {
+
        e.preventDefault();
+
        const dataRetirada = String(new FormData(e.currentTarget).get('data_retirada') ?? '') || null;
+
        const patch = dataRetirada === (current?.data_retirada ?? null)
+
         ? { data_retirada: dataRetirada }
+
         : { data_retirada: dataRetirada, retirada_concluida: false };
+
        void update(current, patch);
+
       }}>
+
        <label>Data da retirada
+
         <input name="data_retirada" type="date" min={current.data} defaultValue={current?.data_retirada ?? ''} />
+
        </label>
+
        <button type="submit" className="secondary" disabled={changing}>Salvar data da retirada</button>
+
        {current?.data_retirada && (
+
         <button type="button" className="secondary ml-2" disabled={changing} onClick={() =>
+
          void update(current, { retirada_concluida: !current.retirada_concluida })
+
         }>
+
          {current.retirada_concluida ? 'Reabrir retirada' : 'Concluir retirada'}
+
         </button>
+
        )}
+
       </form>
+
      )}
+
      <Quantidades r={current}/>
 
      <dl className="summary"><div><dt>Subtotal da locação</dt><dd>{moeda(current.subtotal)}</dd></div><div><dt>Frete</dt><dd>{moeda(current.frete)}</dd></div><div className="font-bold"><dt>Total da reserva</dt><dd>{moeda(current.total)}</dd></div></dl>
 
      <div className="flex gap-2 flex-wrap mt-4"><button className="primary" onClick={()=>void share(current)}>Enviar reserva</button>
+
       <button type="button" className="secondary" onClick={async () => {
+
         setError('');
+
         try {
+
           await navigator.clipboard.writeText(mensagem);
+
           window.alert('Mensagem copiada. Cole no WhatsApp se aparecer só o PDF.');
+
         } catch {
+
           setError('Não foi possível copiar a mensagem neste navegador.');
+
         }
+
       }}>Copiar mensagem</button>
+
       <button className="secondary" onClick={()=>comprovante(current).save(fileName(current))}>Baixar PDF</button>
 
       {current.status==='ativa'&&<><button className="secondary" onClick={()=>setForm(current.id)}>Editar reserva</button><button className="danger" disabled={changing} onClick={()=>{if(confirm('Cancelar esta reserva e retirá-la do Financeiro?'))void update(current,{status:'cancelada'});}}>Cancelar reserva</button></>}
@@ -741,12 +743,19 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
     </form></div>
 
     <div className="space-y-4">
+
      <RotaDoDia
+
       key={JSON.stringify([date, config.saida, rows.filter(r => r.data === date || r.data_retirada === date)])}
+
       data={date}
+
       deposito={config.saida}
+
       client={client}
+
      />
+
      {import.meta.env.VITE_GOOGLE_MAPS_KEY && <Mapa reservas={deliveries} saida={config.saida} onParadas={setParadas}/>}
 
      <section className="card"><h2>Entregas de {dia(date)}</h2>
@@ -763,15 +772,11 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
 
     if (!over || active.id === over.id) return;
 
-
-
     const de = idsDasEntregas.indexOf(String(active.id));
 
     const para = idsDasEntregas.indexOf(String(over.id));
 
     if (de < 0 || para < 0) return;
-
-
 
     setOrdemManual(anterior => ({
 
@@ -805,8 +810,6 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
 
 <p>Contato: {r.telefone}</p>
 
-
-
 <div className="my-3 flex flex-wrap gap-2">
 
   <a
@@ -824,8 +827,6 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
     WhatsApp
 
   </a>
-
-
 
   <a
 
@@ -868,6 +869,11 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
     <div className="kpi"><p>Valor de locações no período</p><strong>{moeda(financial.reduce((sum,r)=>sum+r.subtotal,0))}</strong><p>{financial.length} {financial.length===1?'reserva considerada':'reservas consideradas'}</p></div>
 
     <h2>Reservas do período</h2>
+
+    <p className="muted">
+      Toalhas no período: {financial.reduce((soma, r) => soma + r.toalhas, 0)} ·{' '}
+      {moeda(financial.reduce((soma, r) => soma + r.toalhas * r.preco_toalha, 0))}
+    </p>
 
     {!financial.length&&<p className="empty">Nenhuma locação neste período.</p>}
 
