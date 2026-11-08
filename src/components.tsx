@@ -1,11 +1,21 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import {
-  dia, deslocar, semana, items, moeda, empty, valores,
-  type Config, type Draft, type Reserva,
+  dia,
+  deslocar,
+  semana,
+  items,
+  moeda,
+  empty,
+  valores,
+  type Config,
+  type Draft,
+  type Reserva,
 } from './model';
 
 export function Calendario({
-  date, setDate, reservas,
+  date,
+  setDate,
+  reservas,
 }: {
   date: string;
   setDate: (d: string) => void;
@@ -34,9 +44,11 @@ export function Calendario({
         >
           ‹
         </button>
+
         <h2 className="text-center capitalize">
           {dia(date, { month: 'long', year: 'numeric' })}
         </h2>
+
         <button
           type="button"
           className="secondary"
@@ -49,7 +61,9 @@ export function Calendario({
 
       <div className="grid grid-cols-7 gap-1 text-center">
         {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map(nomeDia => (
-          <span className="muted py-2 text-xs" key={nomeDia}>{nomeDia}</span>
+          <span className="muted py-2 text-xs" key={nomeDia}>
+            {nomeDia}
+          </span>
         ))}
 
         {Array.from({ length: 42 }, (_, i) => deslocar(inicio, i)).map(d => (
@@ -57,8 +71,12 @@ export function Calendario({
             type="button"
             key={d}
             onClick={() => setDate(d)}
-            className={`day${d === date ? ' selected' : ''}${d.slice(0, 7) !== date.slice(0, 7) ? ' outside' : ''}`}
-            aria-label={`${dia(d)}${datasComReserva.has(d) ? ', com reservas' : ''}`}
+            className={`day${d === date ? ' selected' : ''}${
+              d.slice(0, 7) !== date.slice(0, 7) ? ' outside' : ''
+            }`}
+            aria-label={`${dia(d)}${
+              datasComReserva.has(d) ? ', com reservas' : ''
+            }`}
             aria-pressed={d === date}
           >
             {Number(d.slice(8))}
@@ -99,20 +117,32 @@ const grupos = [
   ]],
 ] as const;
 
-const estados = 'AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO'.split(' ');
+const estados =
+  'AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO'
+    .split(' ');
 
 const apenasDigitos = (valor: string) => valor.replace(/\D/g, '');
 
 const normalizarNome = (nome: string) =>
-  nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+  nome
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
 
 export function cents(value: string) {
-  if (!/^\d+(?:[,.]\d{1,2})?$/.test(value.trim())) return NaN;
-  return Math.round(Number(value.replace(',', '.')) * 100);
+  const texto = value.trim();
+  if (!/^\d+(?:[,.]\d{1,2})?$/.test(texto)) return NaN;
+  return Math.round(Number(texto.replace(',', '.')) * 100);
 }
 
 export function FormReserva({
-  date, config, current, historico = [], save, close,
+  date,
+  config,
+  current,
+  historico = [],
+  save,
+  close,
 }: {
   date: string;
   config: Config;
@@ -124,7 +154,10 @@ export function FormReserva({
   const [draft, setDraft] = useState<Draft>(() =>
     current
       ? Object.fromEntries(
-          Object.keys(empty).map(key => [key, current[key as keyof Draft]]),
+          Object.keys(empty).map(key => [
+            key,
+            current[key as keyof typeof empty] ?? empty[key as keyof typeof empty],
+          ]),
         ) as Draft
       : { ...empty, data: date },
   );
@@ -132,6 +165,18 @@ export function FormReserva({
   const [frete, setFrete] = useState(
     (draft.frete / 100).toFixed(2).replace('.', ','),
   );
+
+  const [precosDigitados, setPrecosDigitados] = useState(() => {
+    const aplicados = current ? valores(current) : config;
+
+    return {
+      conjunto: (aplicados.conjunto / 100).toFixed(2).replace('.', ','),
+      mesa: (aplicados.mesa / 100).toFixed(2).replace('.', ','),
+      cadeira: (aplicados.cadeira / 100).toFixed(2).replace('.', ','),
+      toalha: (aplicados.toalha / 100).toFixed(2).replace('.', ','),
+    };
+  });
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [cepStatus, setCepStatus] = useState('');
@@ -139,6 +184,7 @@ export function FormReserva({
     () => apenasDigitos(current?.cep ?? ''),
   );
   const [mostrarClientes, setMostrarClientes] = useState(true);
+
   const cep = apenasDigitos(draft.cep);
 
   useEffect(() => {
@@ -154,6 +200,7 @@ export function FormReserva({
         const resposta = await fetch(`https://viacep.com.br/ws/${cep}/json/`, {
           signal: controller.signal,
         });
+
         if (!resposta.ok) throw new Error('Falha na consulta');
 
         const endereco = await resposta.json();
@@ -183,7 +230,9 @@ export function FormReserva({
         );
       } catch {
         if (!controller.signal.aborted) {
-          setCepStatus('Não foi possível consultar o CEP. Preencha o endereço manualmente.');
+          setCepStatus(
+            'Não foi possível consultar o CEP. Preencha o endereço manualmente.',
+          );
         }
       }
     }
@@ -211,77 +260,122 @@ export function FormReserva({
   }
 
   function preencherCliente(cliente: Reserva) {
-  setCepDoCadastro(apenasDigitos(cliente.cep ?? ''));
-  setCepStatus('');
-  setMostrarClientes(false);
+    setCepDoCadastro(apenasDigitos(cliente.cep ?? ''));
+    setCepStatus('');
+    setMostrarClientes(false);
 
-  setDraft(anterior => ({
-    ...anterior,
-    nome: cliente.nome,
-    telefone: cliente.telefone,
-    telefone_extra: cliente.telefone_extra ?? '',
-    contato: cliente.contato ?? '',
-    parentesco: cliente.parentesco ?? '',
-    instagram: cliente.instagram ?? '',
-    cep: cliente.cep ?? '',
-    rua: cliente.rua ?? '',
-    numero_endereco: cliente.numero_endereco ?? '',
-    bairro: cliente.bairro ?? '',
-    cidade: cliente.cidade ?? '',
-    uf: cliente.uf ?? '',
-    complemento: cliente.complemento ?? '',
-    condominio: cliente.condominio ?? '',
-    apartamento: cliente.apartamento ?? '',
-    referencia: cliente.referencia ?? '',
-  }));
-}
-  const precos = current ? valores(current) : config;
+    setDraft(anterior => ({
+      ...anterior,
+      nome: cliente.nome,
+      telefone: cliente.telefone,
+      telefone_extra: cliente.telefone_extra ?? '',
+      contato: cliente.contato ?? '',
+      parentesco: cliente.parentesco ?? '',
+      instagram: cliente.instagram ?? '',
+      cep: cliente.cep ?? '',
+      rua: cliente.rua ?? '',
+      numero_endereco: cliente.numero_endereco ?? '',
+      bairro: cliente.bairro ?? '',
+      cidade: cliente.cidade ?? '',
+      uf: cliente.uf ?? '',
+      complemento: cliente.complemento ?? '',
+      condominio: cliente.condominio ?? '',
+      apartamento: cliente.apartamento ?? '',
+      referencia: cliente.referencia ?? '',
+    }));
+  }
+
+  const precos = {
+    conjunto: cents(precosDigitados.conjunto),
+    mesa: cents(precosDigitados.mesa),
+    cadeira: cents(precosDigitados.cadeira),
+    toalha: cents(precosDigitados.toalha),
+  };
+
+  const precosValidos = Object.values(precos).every(
+    valor => Number.isInteger(valor) && valor >= 0 && valor <= 2147483647,
+  );
+
   const subtotal = items.reduce(
-    (total, item) => total + draft[item.qty] * precos[item.price],
+    (total, item) => total + draft[item.qty] * (
+      Number.isFinite(precos[item.price]) ? precos[item.price] : 0
+    ),
     0,
   );
+
   const valorFrete = cents(frete) || 0;
 
   const ocupacao = historico.reduce(
-  (total, reserva) => {
-    if (
-      reserva.data !== draft.data ||
-      reserva.status !== 'ativa' ||
-      reserva.id === current?.id
-    ) {
-      return total;
-    }
+    (total, reserva) => {
+      if (
+        reserva.data !== draft.data ||
+        reserva.status !== 'ativa' ||
+        reserva.id === current?.id
+      ) {
+        return total;
+      }
 
-    return {
-      mesas: total.mesas + reserva.conjuntos + reserva.mesas,
-      cadeiras: total.cadeiras + reserva.conjuntos * 4 + reserva.cadeiras,
-    };
-  },
-  { mesas: 0, cadeiras: 0 },
-);
+      return {
+        mesas: total.mesas + reserva.conjuntos + reserva.mesas,
+        cadeiras: total.cadeiras + reserva.conjuntos * 4 + reserva.cadeiras,
+      };
+    },
+    { mesas: 0, cadeiras: 0 },
+  );
 
-const mesasLivres = Math.max(0, (config.estoque_mesas ?? 35) - ocupacao.mesas);
-const cadeirasLivres = Math.max(0, (config.estoque_cadeiras ?? 140) - ocupacao.cadeiras);
-const conjuntosLivres = Math.min(mesasLivres, Math.floor(cadeirasLivres / 4));
+  const mesasLivres = Math.max(
+    0,
+    (config.estoque_mesas ?? 35) - ocupacao.mesas,
+  );
+  const cadeirasLivres = Math.max(
+    0,
+    (config.estoque_cadeiras ?? 140) - ocupacao.cadeiras,
+  );
+  const conjuntosLivres = Math.min(
+    mesasLivres,
+    Math.floor(cadeirasLivres / 4),
+  );
 
-const estoqueInsuficiente =
-  draft.conjuntos + draft.mesas > mesasLivres ||
-  draft.conjuntos * 4 + draft.cadeiras > cadeirasLivres;
+  const estoqueInsuficiente =
+    draft.conjuntos + draft.mesas > mesasLivres ||
+    draft.conjuntos * 4 + draft.cadeiras > cadeirasLivres;
 
-const estoqueEsgotado = mesasLivres === 0 && cadeirasLivres === 0;
+  const estoqueEsgotado = mesasLivres === 0 && cadeirasLivres === 0;
+
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
 
-    const submitted = new FormData(e.currentTarget);
-    const freight = cents(frete);
+    if (!precosValidos) {
+      setError(
+        'Confira os preços unitários. Use valores com até duas casas decimais.',
+      );
+      return;
+    }
+
+    if (estoqueInsuficiente) {
+      setError('A quantidade escolhida supera o estoque disponível nesta data.');
+      return;
+    }
+
+    if (!items.every(item =>
+      Number.isInteger(draft[item.qty]) &&
+      draft[item.qty] >= 0 &&
+      draft[item.qty] <= 100000
+    )) {
+      setError('Informe quantidades inteiras maiores ou iguais a zero.');
+      return;
+    }
 
     if (!items.some(item => draft[item.qty] > 0)) {
       setError('Informe pelo menos um item de locação.');
       return;
     }
 
-    if (!Number.isInteger(freight) || freight > 2147483647) {
+    const submitted = new FormData(e.currentTarget);
+    const freight = cents(frete);
+
+    if (!Number.isInteger(freight) || freight < 0 || freight > 2147483647) {
       setError('Informe um frete válido com até duas casas decimais.');
       return;
     }
@@ -302,9 +396,15 @@ const estoqueEsgotado = mesasLivres === 0 && cadeirasLivres === 0;
         data: String(submitted.get('data')),
         horario: String(submitted.get('horario')),
         frete: freight,
+        preco_conjunto: precos.conjunto,
+        preco_mesa: precos.mesa,
+        preco_cadeira: precos.cadeira,
+        preco_toalha: precos.toalha,
       }, current?.id);
     } catch {
-      setError('Não foi possível salvar. Confira os dados e tente novamente.');
+      setError(
+        'Não foi possível salvar. Confira os dados, o estoque e a conexão.',
+      );
     } finally {
       setBusy(false);
     }
@@ -315,7 +415,7 @@ const estoqueEsgotado = mesasLivres === 0 && cadeirasLivres === 0;
       {grupos.map(([title, fields]) => (
         <section className="card" key={title}>
           <h2>{title}</h2>
-          
+
           <div className="fields">
             {fields.map(([key, label, required, type]) => (
               <div key={key}>
@@ -353,27 +453,30 @@ const estoqueEsgotado = mesasLivres === 0 && cadeirasLivres === 0;
                   )}
                 </label>
 
-
                 {key === 'cep' && cepStatus && (
-                  <p className="muted mt-1 text-xs" role="status">{cepStatus}</p>
+                  <p className="muted mt-1 text-xs" role="status">
+                    {cepStatus}
+                  </p>
                 )}
 
                 {key === 'nome' && clientesEncontrados.size > 0 && (
-  <div className="mt-2 grid gap-2">
-    <p className="muted text-sm">Selecione um cliente cadastrado</p>
+                  <div className="mt-2 grid gap-2">
+                    <p className="muted text-sm">
+                      Selecione um cliente cadastrado
+                    </p>
 
-    {[...clientesEncontrados.values()].map(cliente => (
-      <button
-        key={cliente.id}
-        type="button"
-        className="secondary"
-        onClick={() => preencherCliente(cliente)}
-      >
-        {cliente.nome} · {cliente.telefone}
-      </button>
-    ))}
-  </div>
-)}
+                    {[...clientesEncontrados.values()].map(cliente => (
+                      <button
+                        key={cliente.id}
+                        type="button"
+                        className="secondary"
+                        onClick={() => preencherCliente(cliente)}
+                      >
+                        {cliente.nome} · {cliente.telefone}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -382,41 +485,80 @@ const estoqueEsgotado = mesasLivres === 0 && cadeirasLivres === 0;
 
       <section className="card">
         <h2>Itens e valores</h2>
-        <div className="summary" aria-live="polite">
-  <p><strong>Disponibilidade para {dia(draft.data, { dateStyle: 'short' })}</strong></p>
-  <p>
-    Mesas: {mesasLivres || 'esgotadas'} · Cadeiras: {cadeirasLivres || 'esgotadas'}
-  </p>
-  <p>Conjuntos completos: {conjuntosLivres || 'esgotados'}</p>
-  <p className="muted text-sm">Os conjuntos usam as mesas e cadeiras acima.</p>
+        <p className="muted mt-1 text-sm">
+          Ajuste os preços unitários conforme o valor combinado com o cliente.
+        </p>
 
-  {estoqueEsgotado ? (
-    <p className="error mt-2">Estoque esgotado para esta data.</p>
-  ) : estoqueInsuficiente && (
-    <p className="error mt-2">
-      A quantidade escolhida supera o estoque disponível para esta data.
-    </p>
-  )}
-</div>
+        <div className="summary" aria-live="polite">
+          <p>
+            <strong>
+              Disponibilidade para{' '}
+              {draft.data ? dia(draft.data, { dateStyle: 'short' }) : 'a data selecionada'}
+            </strong>
+          </p>
+          <p>
+            Mesas: {mesasLivres || 'esgotadas'} ·{' '}
+            Cadeiras: {cadeirasLivres || 'esgotadas'}
+          </p>
+          <p>Conjuntos completos: {conjuntosLivres || 'esgotados'}</p>
+          <p className="muted text-sm">
+            Cada conjunto usa 1 mesa e 4 cadeiras.
+          </p>
+
+          {estoqueInsuficiente ? (
+            <p className="error mt-2">
+              A quantidade escolhida supera o estoque disponível para esta data.
+            </p>
+          ) : estoqueEsgotado && (
+            <p className="muted mt-2">
+              Mesas e cadeiras esgotadas para esta data.
+            </p>
+          )}
+        </div>
 
         <div className="fields">
           {items.map(item => (
-            <label key={item.qty}>
-              {item.label} · {moeda(precos[item.price])}
-              <input
-                type="number"
-                required
-                min={0}
-                max={100000}
-                step={1}
-                value={draft[item.qty]}
-                onFocus={e => e.target.select()}
-                onChange={e => {
-                  const quantidade = Number(e.target.value);
-                  setDraft(anterior => ({ ...anterior, [item.qty]: quantidade }));
-                }}
-              />
-            </label>
+            <div
+              key={item.qty}
+              className="grid grid-cols-2 gap-2 rounded-xl border border-stone-200 p-3"
+            >
+              <label>
+                {item.label}
+                <input
+                  type="number"
+                  required
+                  min={0}
+                  max={100000}
+                  step={1}
+                  value={draft[item.qty]}
+                  onFocus={e => e.target.select()}
+                  onChange={e => {
+                    const quantidade = Number(e.target.value);
+                    setDraft(anterior => ({
+                      ...anterior,
+                      [item.qty]: quantidade,
+                    }));
+                  }}
+                />
+              </label>
+
+              <label>
+                Valor unitário (R$)
+                <input
+                  required
+                  inputMode="decimal"
+                  value={precosDigitados[item.price]}
+                  onFocus={e => e.target.select()}
+                  onChange={e => {
+                    const valor = e.target.value;
+                    setPrecosDigitados(anterior => ({
+                      ...anterior,
+                      [item.price]: valor,
+                    }));
+                  }}
+                />
+              </label>
+            </div>
           ))}
 
           <label>
@@ -430,9 +572,15 @@ const estoqueEsgotado = mesasLivres === 0 && cadeirasLivres === 0;
           </label>
         </div>
 
-        <dl className="summary">
-          <div><dt>Subtotal da locação</dt><dd>{moeda(subtotal)}</dd></div>
-          <div><dt>Frete</dt><dd>{moeda(valorFrete)}</dd></div>
+        <dl className="summary" aria-live="polite">
+          <div>
+            <dt>Subtotal da locação</dt>
+            <dd>{moeda(subtotal)}</dd>
+          </div>
+          <div>
+            <dt>Frete</dt>
+            <dd>{moeda(valorFrete)}</dd>
+          </div>
           <div className="font-bold">
             <dt>Total da reserva</dt>
             <dd>{moeda(subtotal + valorFrete)}</dd>
@@ -443,10 +591,19 @@ const estoqueEsgotado = mesasLivres === 0 && cadeirasLivres === 0;
       {error && <p role="alert" className="error">{error}</p>}
 
       <div className="flex flex-wrap gap-2">
-        <button type="submit" className="primary" disabled={busy || estoqueInsuficiente || estoqueEsgotado}>
+        <button
+          type="submit"
+          className="primary"
+          disabled={busy || estoqueInsuficiente || !precosValidos}
+        >
           {busy ? 'Salvando…' : 'Salvar reserva'}
         </button>
-        <button type="button" className="secondary" disabled={busy || estoqueInsuficiente || estoqueEsgotado} onClick={close}>
+        <button
+          type="button"
+          className="secondary"
+          disabled={busy}
+          onClick={close}
+        >
           Voltar
         </button>
       </div>
