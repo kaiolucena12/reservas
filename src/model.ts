@@ -41,7 +41,12 @@ export const empty = {
   frete: 0,
 };
 
-export type Draft = typeof empty;
+export type Draft = typeof empty & {
+  preco_conjunto?: number;
+  preco_mesa?: number;
+  preco_cadeira?: number;
+  preco_toalha?: number;
+};
 
 export type Reserva = Draft & {
   id: string;
