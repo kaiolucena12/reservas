@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "Seu Lima Locações",
+  "short_name": "Seu Lima",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/sllogo.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ]
+}

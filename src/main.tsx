@@ -1,3 +1,4 @@
+import { Notificacoes } from './Notificacoes';
 import { RotaDoDia } from './RotaDoDia';
 
 import {
@@ -316,6 +317,20 @@ const sensoresEntrega = useSensors(
 
  },[reload]);
 
+ useEffect(() => {
+  const url = new URL(window.location.href);
+  const reservaId = url.searchParams.get('reserva');
+  if (!reservaId) return;
+
+  const reserva = rows.find((item) => item.id === reservaId);
+  if (!reserva) return;
+
+  setDate(reserva.data);
+  setDetail(reserva.id);
+  url.searchParams.delete('reserva');
+  window.history.replaceState(window.history.state, '', url.href);
+ }, [rows]);
+
 const daily = useMemo(
 
   () => rows.filter(r => r.data === date && r.status === 'ativa'),
@@ -549,6 +564,8 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
     <p className="muted">{tab==='Reservas'?'Agenda de eventos e cadastro de clientes.':tab==='Entregas'?'Organize as paradas e acompanhe cada entrega.':'Acompanhe o valor dos materiais locados.'}</p>
 
    </header>
+
+   {config && <Notificacoes client={client} />}
 
    {error&&<p className="error mb-4" role="alert">{error}</p>}
 
@@ -871,8 +888,11 @@ Se tiver alguma dúvida ou precisar ajustar alguma informação, é só chamar p
     <h2>Reservas do período</h2>
 
     <p className="muted">
+
       Toalhas no período: {financial.reduce((soma, r) => soma + r.toalhas, 0)} ·{' '}
+
       {moeda(financial.reduce((soma, r) => soma + r.toalhas * r.preco_toalha, 0))}
+
     </p>
 
     {!financial.length&&<p className="empty">Nenhuma locação neste período.</p>}
