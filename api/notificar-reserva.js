@@ -1,9 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
-import { createRequire } from 'node:module';
 import { createClient } from '@supabase/supabase-js';
-
-const require = createRequire(import.meta.url);
-const webpush = require('web-push');
 
 const dominiosPush = new Set([
   'fcm.googleapis.com',
@@ -91,6 +87,18 @@ export default async function handler(req, res) {
   }
 
   try {
+    const moduloWebPush = await import('web-push');
+    const webpush = typeof moduloWebPush.sendNotification === 'function'
+      ? moduloWebPush
+      : moduloWebPush.default;
+
+    if (typeof webpush?.sendNotification !== 'function') {
+      console.error('web-push não exportou sendNotification.');
+      return res.status(500).json({
+        erro: 'Função de envio do web-push indisponível.',
+      });
+    }
+
     const supabase = createClient(
       VITE_SUPABASE_URL,
       SUPABASE_SERVICE_ROLE_KEY,
@@ -145,7 +153,10 @@ export default async function handler(req, res) {
           return 'enviado';
         } catch (erro) {
           if (erro?.statusCode !== 404 && erro?.statusCode !== 410) {
-            console.error('Falha no serviço de push:', erro?.statusCode ?? 'sem status');
+            console.error(
+              'Falha no serviço de push:',
+              erro?.statusCode ?? 'sem status',
+            );
             return 'falha';
           }
 
@@ -168,7 +179,7 @@ export default async function handler(req, res) {
 
     return res.status(falhas ? 502 : 200).json({ enviados, expirados, falhas });
   } catch (erro) {
-    console.error('Falha ao processar a notificação:', erro?.name);
+    console.error('Falha ao processar a notificação:', erro?.code ?? erro?.name);
     return res.status(500).json({ erro: 'Falha no envio de notificações.' });
   }
 }
